@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -13,10 +14,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	toonBase   = "http://eneco.lan"
-	listenAddr = ":9101"
-)
+// --- Config ---
+
+type config struct {
+	toonAddr   string
+	listenAddr string
+	timeout    time.Duration
+}
 
 // --- API response types ---
 
@@ -54,6 +58,7 @@ type ZWaveDevice struct {
 // --- Collector ---
 
 type toonCollector struct {
+	cfg    config
 	client *http.Client
 
 	// thermostat
@@ -75,12 +80,13 @@ type toonCollector struct {
 	scrapeSuccess *prometheus.Desc
 }
 
-func newToonCollector() *toonCollector {
+func newToonCollector(cfg config) *toonCollector {
 	tariffLabel := []string{"tariff"} // "nt" (off-peak) or "lt" (peak)
 	dirLabel := []string{"direction"} // "delivered" or "received"
 
 	return &toonCollector{
-		client: &http.Client{Timeout: 10 * time.Second},
+		cfg:    cfg,
+		client: &http.Client{Timeout: cfg.timeout},
 
 		tempCurrent: prometheus.NewDesc(
 			"toon_temperature_current_celsius",
@@ -170,7 +176,7 @@ func (c *toonCollector) fetchJSON(url string, target any) error {
 
 func (c *toonCollector) collectPowerUsage(ch chan<- prometheus.Metric) {
 	const endpoint = "pwrusage"
-	url := toonBase + "/happ_pwrusage?action=GetCurrentUsage"
+	url := c.cfg.toonAddr + "/happ_pwrusage?action=GetCurrentUsage"
 
 	var data PowerUsageResponse
 	if err := c.fetchJSON(url, &data); err != nil {
@@ -190,7 +196,7 @@ func (c *toonCollector) collectPowerUsage(ch chan<- prometheus.Metric) {
 
 func (c *toonCollector) collectThermostat(ch chan<- prometheus.Metric) {
 	const endpoint = "thermstat"
-	url := toonBase + "/happ_thermstat?action=getThermostatInfo"
+	url := c.cfg.toonAddr + "/happ_thermstat?action=getThermostatInfo"
 
 	var data ThermostatInfo
 	if err := c.fetchJSON(url, &data); err != nil {
@@ -222,7 +228,7 @@ func (c *toonCollector) collectThermostat(ch chan<- prometheus.Metric) {
 // Gas is reported in L/h (flow) and L (total); electricity in W and Wh.
 func (c *toonCollector) collectZWave(ch chan<- prometheus.Metric) {
 	const endpoint = "zwave"
-	url := toonBase + "/hdrv_zwave?action=getDevices.json"
+	url := c.cfg.toonAddr + "/hdrv_zwave?action=getDevices.json"
 
 	var devices map[string]ZWaveDevice
 	if err := c.fetchJSON(url, &devices); err != nil {
@@ -290,7 +296,13 @@ func parseFloat(s string) (float64, bool) {
 }
 
 func main() {
-	collector := newToonCollector()
+	cfg := config{}
+	flag.StringVar(&cfg.toonAddr, "toon-addr", "http://eneco.lan", "Base URL of the Toon device")
+	flag.StringVar(&cfg.listenAddr, "listen-addr", ":9100", "Address to listen on for metrics")
+	flag.DurationVar(&cfg.timeout, "timeout", 10*time.Second, "HTTP timeout for Toon API requests")
+	flag.Parse()
+
+	collector := newToonCollector(cfg)
 	prometheus.MustRegister(collector)
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -298,8 +310,8 @@ func main() {
 		fmt.Fprintln(w, `<html><body><a href="/metrics">metrics</a></body></html>`)
 	})
 
-	log.Printf("toon-exporter listening on %s", listenAddr)
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+	log.Printf("toon-exporter listening on %s (toon: %s)", cfg.listenAddr, cfg.toonAddr)
+	if err := http.ListenAndServe(cfg.listenAddr, nil); err != nil {
 		log.Fatal(err)
 	}
 }

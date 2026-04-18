@@ -31,13 +31,13 @@ go build -o toon-exporter .
 ./toon-exporter
 ```
 
-Metrics available at `http://localhost:9101/metrics`.
+Metrics available at `http://localhost:9100/metrics`.
 
 ### Docker
 
 ```bash
 docker build -t toon-exporter .
-docker run -p 9101:9101 toon-exporter
+docker run -p 9100:9100 toon-exporter
 ```
 
 ### Docker Compose
@@ -50,13 +50,21 @@ docker compose up -d
 
 > If your host machine can already resolve `eneco.lan` via DNS/mDNS, switch to `network_mode: host` in `docker-compose.yml` instead of using `extra_hosts`.
 
+## Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `-toon-addr` | `http://eneco.lan` | Base URL of the Toon device |
+| `-listen-addr` | `:9100` | Address to listen on |
+| `-timeout` | `10s` | HTTP timeout for Toon API requests |
+
 ## Prometheus scrape config
 
 ```yaml
 scrape_configs:
   - job_name: toon
     static_configs:
-      - targets: ["localhost:9101"]
+      - targets: ["localhost:9100"]
 ```
 
 ## Requirements
