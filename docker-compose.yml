@@ -1,6 +1,6 @@
 services:
   toon-exporter:
-    image: <yourusername>/toon-exporter:latest
+    image: smbl64/toon-exporter:latest
     restart: unless-stopped
     ports:
       - "${LISTEN_PORT:-9100}:${LISTEN_PORT:-9100}"

@@ -36,6 +36,10 @@ Metrics available at `http://localhost:9100/metrics`.
 ### Docker
 
 ```bash
+# Pull from Docker Hub (amd64 + arm64)
+docker run -p 9100:9100 smbl64/toon-exporter:latest
+
+# Or build locally
 docker build -t toon-exporter .
 docker run -p 9100:9100 toon-exporter
 ```
