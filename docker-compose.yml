@@ -1,11 +1,13 @@
 services:
   toon-exporter:
-    build: .
+    image: <yourusername>/toon-exporter:latest
     restart: unless-stopped
     ports:
-      - "9101:9101"
-    # Toon is on the local LAN; add extra_hosts so the container can reach it.
-    # Adjust the IP to match your Toon's actual address if DNS doesn't work.
-    extra_hosts:
-      - "eneco.lan:192.168.1.x"
-    network_mode: host   # alternatively, remove extra_hosts and use host networking
+      - "${LISTEN_PORT:-9100}:${LISTEN_PORT:-9100}"
+    command:
+      - -toon-addr=${TOON_ADDR:-http://eneco.lan}
+      - -listen-addr=:${LISTEN_PORT:-9100}
+      - -timeout=${TOON_TIMEOUT:-10s}
+    # If eneco.lan resolves on the host but not inside the container,
+    # uncomment network_mode and remove ports (host networking handles it).
+    # network_mode: host
