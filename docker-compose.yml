@@ -4,10 +4,10 @@ services:
     restart: unless-stopped
     ports:
       - "${LISTEN_PORT:-9100}:${LISTEN_PORT:-9100}"
-    command:
-      - -toon-addr=${TOON_ADDR:-http://eneco.lan}
-      - -listen-addr=:${LISTEN_PORT:-9100}
-      - -timeout=${TOON_TIMEOUT:-10s}
+    environment:
+      - TOON_ADDR=${TOON_ADDR:-http://eneco.lan}
+      - LISTEN_PORT=${LISTEN_PORT:-:9100}
+      - READ_TIMEOUT=${READ_TIMEOUT:-10s}
     # If eneco.lan resolves on the host but not inside the container,
     # uncomment network_mode and remove ports (host networking handles it).
     # network_mode: host

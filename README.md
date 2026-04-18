@@ -46,21 +46,19 @@ docker run -p 9100:9100 toon-exporter
 
 ### Docker Compose
 
-Edit `docker-compose.yml` and set the correct IP for `eneco.lan` under `extra_hosts`, then:
-
 ```bash
 docker compose up -d
 ```
 
-> If your host machine can already resolve `eneco.lan` via DNS/mDNS, switch to `network_mode: host` in `docker-compose.yml` instead of using `extra_hosts`.
+> If your host machine can resolve `eneco.lan` via DNS/mDNS, switch to `network_mode: host` in `docker-compose.yml`.
 
-## Flags
+## Environment variables
 
-| Flag | Default | Description |
+| Variable | Default | Description |
 |---|---|---|
-| `-toon-addr` | `http://eneco.lan` | Base URL of the Toon device |
-| `-listen-addr` | `:9100` | Address to listen on |
-| `-timeout` | `10s` | HTTP timeout for Toon API requests |
+| `TOON_ADDR` | `http://eneco.lan` | Base URL of the Toon device |
+| `LISTEN_PORT` | `:9100` | Address to listen on |
+| `READ_TIMEOUT` | `10s` | HTTP timeout for Toon API requests |
 
 ## Prometheus scrape config
 
