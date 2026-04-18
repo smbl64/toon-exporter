@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -295,12 +295,29 @@ func parseFloat(s string) (float64, bool) {
 	return f, true
 }
 
+func getEnv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func parseDurationEnv(key string, def time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+		log.Printf("invalid %s value, using default %s", key, def)
+	}
+	return def
+}
+
 func main() {
-	cfg := config{}
-	flag.StringVar(&cfg.toonAddr, "toon-addr", "http://eneco.lan", "Base URL of the Toon device")
-	flag.StringVar(&cfg.listenAddr, "listen-addr", ":9100", "Address to listen on for metrics")
-	flag.DurationVar(&cfg.timeout, "timeout", 10*time.Second, "HTTP timeout for Toon API requests")
-	flag.Parse()
+	cfg := config{
+		toonAddr:   getEnv("TOON_ADDR", "http://eneco.lan"),
+		listenAddr: getEnv("LISTEN_PORT", ":9100"),
+		timeout:    parseDurationEnv("READ_TIMEOUT", 10*time.Second),
+	}
 
 	collector := newToonCollector(cfg)
 	prometheus.MustRegister(collector)
